@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2021",
+    "module": "NodeNext",
+    "baseUrl": ".",
+    "ignoreDeprecations": "5.0",
+    "allowJs": false,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "NodeNext",
+    "resolveJsonModule": true,
+    "strict": true,
+    "jsx": "preserve",
+    "paths": {
+      "@nunncorp/reporting-manifest": [
+        "packages/reporting-manifest",
+        "packages/reporting-manifest/src/index.ts"
+      ],
+      "shared-libs": [
+        "packages/shared-libs",
+        "packages/shared-libs/src/index.ts"
+      ],
+      "@nunncorp/shared/*": ["packages/shared-libs/src/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist", ".next", "out"]
+}

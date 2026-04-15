@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Completion Sweep Report",
+  "type": "object",
+  "required": [
+    "report_type",
+    "run_id",
+    "run_date",
+    "run_timestamp_utc",
+    "sweep_scope",
+    "counts",
+    "by_scope",
+    "status",
+    "errors",
+    "metadata"
+  ],
+  "properties": {
+    "report_type": {"type": "string", "const": "completion_sweep_report"},
+    "run_id": {"type": "string"},
+    "run_date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+    "run_timestamp_utc": {"type": "string", "format": "date-time"},
+    "sweep_scope": {"type": "string", "enum": ["active","hibernated","unified"]},
+    "counts": {
+      "type": "object",
+      "required": ["attempted","completed","failed","skipped"],
+      "properties": {
+        "attempted": {"type": "integer", "minimum": 0},
+        "completed": {"type": "integer", "minimum": 0},
+        "failed": {"type": "integer", "minimum": 0},
+        "skipped": {"type": "integer", "minimum": 0}
+      }
+    },
+    "by_scope": {
+      "type": "object",
+      "required": ["active","hibernated"],
+      "properties": {
+        "active": {"$ref": "#/properties/counts"},
+        "hibernated": {"$ref": "#/properties/counts"}
+      }
+    },
+    "status": {"type": "string", "enum": ["success","partial","empty","error"]},
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code","message","scope"],
+        "properties": {
+          "code": {"type": "string"},
+          "message": {"type": "string"},
+          "scope": {"type": "string", "enum": ["active","hibernated","system"]}
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "required": ["system","environment","version"],
+      "properties": {
+        "system": {"type": "string", "const": "Sentinel"},
+        "environment": {"type": "string", "enum": ["prod","staging","dev"]},
+        "version": {"type": "string"}
+      }
+    }
+  },
+  "additionalProperties": false
+}
