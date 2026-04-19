@@ -4,6 +4,7 @@ import { handlePropose } from './rpc/propose.js';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import cookieParser from 'cookie-parser';
+import rateLimit from 'express-rate-limit';
 import { azureAuth, isProductionLikeRuntime, isSmokeAuthAllowed } from './azureAuth.js';
 import { requireRole } from './rbac.js';
 import { handleCommand } from './rpc/command.js';
@@ -13,6 +14,13 @@ import * as sharedLibs from 'shared-libs';
 import { buildTrigentPilotDemo } from './trigentPilotDemo.js';
 
 const { safeLog, safeError } = sharedLibs;
+
+const chatRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const app = express();
 
@@ -246,7 +254,7 @@ app.post('/v1/billing/finalize-usage', billingFinalizeRoute);
 app.post('/v1/billing/reports/query', billingListRoute);
 app.post('/v1/billing/reports/retry-failed', billingRetryRoute);
 app.post('/v1/billing/reports/reconcile', billingReconcileRoute);
-app.post('/v1/chat', requireRole(['billing.operator', 'billing.admin'])(handleChat));
+app.post('/v1/chat', chatRateLimiter, requireRole(['billing.operator', 'billing.admin'])(handleChat));
 app.post('/v1/command', handleCommand);
 app.post('/v1/command/query', handleCommandQuery);
 
