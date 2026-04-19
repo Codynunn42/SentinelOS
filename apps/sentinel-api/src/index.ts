@@ -11,8 +11,16 @@ import { handleCommandQuery } from './rpc/commandQuery.js';
 import { handleChat } from './rpc/chat.js';
 import * as sharedLibs from 'shared-libs';
 import { buildTrigentPilotDemo } from './trigentPilotDemo.js';
+import rateLimit from 'express-rate-limit';
 
 const { safeLog, safeError } = sharedLibs;
+
+const smokeRbacRateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 60, // limit each IP to 60 requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 const app = express();
 
@@ -253,6 +261,7 @@ app.post('/v1/command/query', handleCommandQuery);
 if (isSmokeAuthAllowed()) {
   app.get(
     '/v1/_smoke/rbac',
+    smokeRbacRateLimiter,
     requireRole('billing.operator')((req: Request, res: Response) => {
       res.status(200).json({
         ok: true,
