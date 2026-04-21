@@ -4,6 +4,7 @@ import { handlePropose } from './rpc/propose.js';
 import { fileURLToPath } from 'node:url';
 import { resolve } from 'node:path';
 import cookieParser from 'cookie-parser';
+import rateLimit from 'express-rate-limit';
 import { azureAuth, isProductionLikeRuntime, isSmokeAuthAllowed } from './azureAuth.js';
 import { requireRole } from './rbac.js';
 import { handleCommand } from './rpc/command.js';
@@ -15,9 +16,9 @@ import rateLimit from 'express-rate-limit';
 
 const { safeLog, safeError } = sharedLibs;
 
-const smokeRbacRateLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 60, // limit each IP to 60 requests per window
+const chatRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -254,7 +255,8 @@ app.post('/v1/billing/finalize-usage', billingFinalizeRoute);
 app.post('/v1/billing/reports/query', billingListRoute);
 app.post('/v1/billing/reports/retry-failed', billingRetryRoute);
 app.post('/v1/billing/reports/reconcile', billingReconcileRoute);
-app.post('/v1/chat', requireRole(['billing.operator', 'billing.admin'])(handleChat));
+const protectedChatHandler = requireRole(['billing.operator', 'billing.admin'])(handleChat);
+app.post('/v1/chat', chatRateLimiter, protectedChatHandler);
 app.post('/v1/command', handleCommand);
 app.post('/v1/command/query', handleCommandQuery);
 
