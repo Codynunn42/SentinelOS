@@ -255,7 +255,7 @@ app.post('/v1/billing/reports/query', billingListRoute);
 app.post('/v1/billing/reports/retry-failed', billingRetryRoute);
 app.post('/v1/billing/reports/reconcile', billingReconcileRoute);
 const protectedChatHandler = requireRole(['billing.operator', 'billing.admin'])(handleChat);
-app.post('/v1/chat', chatRateLimiter, chatRateLimiter, protectedChatHandler);
+app.post('/v1/chat', chatRateLimiter, protectedChatHandler);
 app.post('/v1/command', handleCommand);
 app.post('/v1/command/query', handleCommandQuery);
 
