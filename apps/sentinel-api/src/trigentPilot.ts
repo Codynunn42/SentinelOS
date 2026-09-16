@@ -251,7 +251,7 @@ export function analyzeWorkflowBottlenecks(args: {
   }
 
   const bottlenecks: WorkflowBottleneck[] = Array.from(byStage.entries())
-    .map(([stage, durations]) => {
+    .map<WorkflowBottleneck>(([stage, durations]) => {
       const avg = average(durations) ?? 0;
       return {
         stage,

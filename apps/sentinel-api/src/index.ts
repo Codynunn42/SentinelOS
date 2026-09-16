@@ -12,13 +12,19 @@ import { handleCommandQuery } from './rpc/commandQuery.js';
 import { handleChat } from './rpc/chat.js';
 import * as sharedLibs from 'shared-libs';
 import { buildTrigentPilotDemo } from './trigentPilotDemo.js';
-import rateLimit from 'express-rate-limit';
 
 const { safeLog, safeError } = sharedLibs;
 
 const chatRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const smokeRbacRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
   standardHeaders: true,
   legacyHeaders: false,
 });
@@ -38,7 +44,7 @@ const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 const RATE_LIMIT = 100; // requests per minute
 const RATE_WINDOW = 60 * 1000; // 1 minute
 
-function rateLimit(req: Request, res: Response, next: NextFunction) {
+function inMemoryRateLimit(req: Request, res: Response, next: NextFunction) {
   const clientId = req.ip || 'unknown';
   const now = Date.now();
   const clientData = rateLimitMap.get(clientId);
@@ -60,7 +66,7 @@ function rateLimit(req: Request, res: Response, next: NextFunction) {
 }
 
 // Apply rate limiting to all routes
-app.use(rateLimit);
+app.use(inMemoryRateLimit);
 
 app.use('/v1', azureAuth, (req: Request, res: Response, next: NextFunction) => {
   if (!req.sentinelIdentity) {
@@ -255,8 +261,7 @@ app.post('/v1/billing/finalize-usage', billingFinalizeRoute);
 app.post('/v1/billing/reports/query', billingListRoute);
 app.post('/v1/billing/reports/retry-failed', billingRetryRoute);
 app.post('/v1/billing/reports/reconcile', billingReconcileRoute);
-const protectedChatHandler = requireRole(['billing.operator', 'billing.admin'])(handleChat);
-app.post('/v1/chat', chatRateLimiter, protectedChatHandler);
+app.post('/v1/chat', chatRateLimiter, requireRole(['billing.operator', 'billing.admin'])(), handleChat);
 app.post('/v1/command', handleCommand);
 app.post('/v1/command/query', handleCommandQuery);
 
@@ -264,13 +269,14 @@ if (isSmokeAuthAllowed()) {
   app.get(
     '/v1/_smoke/rbac',
     smokeRbacRateLimiter,
-    requireRole('billing.operator')((req: Request, res: Response) => {
+    requireRole('billing.operator')(),
+    (req: Request, res: Response) => {
       res.status(200).json({
         ok: true,
         actorId: req.sentinelIdentity?.actorId ?? null,
         roles: req.sentinelIdentity?.roles ?? [],
       });
-    })
+    }
   );
 }
 
